@@ -74,21 +74,36 @@ func main() {
             raylib.DrawRectangleV(unit.Position, raylib.NewVector2(unitSize, unitSize), unit.Color)
         }
 
-        // Handle mouse input for selecting and moving units
         if raylib.IsMouseButtonDown(raylib.MouseLeftButton) {
             if !selecting {
                 selectRectangle.X = float32(raylib.GetMouseX())
                 selectRectangle.Y = float32(raylib.GetMouseY())
                 selecting = true
             } else {
-                selectRectangle.Width = float32(raylib.GetMouseX()) - selectRectangle.X
-                selectRectangle.Height = float32(raylib.GetMouseY()) - selectRectangle.Y
+                endX := float32(raylib.GetMouseX())
+                endY := float32(raylib.GetMouseY())
+                
+                if endX < selectRectangle.X {
+                    selectRectangle.Width = selectRectangle.X - endX
+                    selectRectangle.X = endX
+                } else {
+                    selectRectangle.Width = endX - selectRectangle.X
+                }
+                
+                if endY < selectRectangle.Y {
+                    selectRectangle.Height = selectRectangle.Y - endY
+                    selectRectangle.Y = endY
+                } else {
+                    selectRectangle.Height = endY - selectRectangle.Y
+                }
+                
                 raylib.DrawRectangleLinesEx(selectRectangle, 1, raylib.Gray)
             }
-        }
+        }        
 
         if raylib.IsMouseButtonReleased(raylib.MouseLeftButton) {
             if selecting {
+                hasTarget = false // Reset the target
                 for i := range playerUnits {
                     playerUnits[i].Selected = raylib.CheckCollisionRecs(selectRectangle, raylib.NewRectangle(playerUnits[i].Position.X, playerUnits[i].Position.Y, unitSize, unitSize))
                 }
@@ -106,9 +121,12 @@ func main() {
         if hasTarget {
             for i := range playerUnits {
                 if playerUnits[i].Selected {
-                    angle := math.Atan2(float64(target.Y-playerUnits[i].Position.Y), float64(target.X-playerUnits[i].Position.X))
-                    playerUnits[i].Position.X += float32(math.Cos(angle) * float64(playerUnits[i].Speed))
-                    playerUnits[i].Position.Y += float32(math.Sin(angle) * float64(playerUnits[i].Speed))
+                    distanceToTarget := raylib.Vector2Distance(playerUnits[i].Position, target)
+                    if distanceToTarget > playerUnits[i].Speed {
+                        angle := math.Atan2(float64(target.Y-playerUnits[i].Position.Y), float64(target.X-playerUnits[i].Position.X))
+                        playerUnits[i].Position.X += float32(math.Cos(angle) * float64(playerUnits[i].Speed))
+                        playerUnits[i].Position.Y += float32(math.Sin(angle) * float64(playerUnits[i].Speed))
+                    }
                 }
             }
             avoidOverlap(playerUnits)
